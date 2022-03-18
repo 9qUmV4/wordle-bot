@@ -1,13 +1,17 @@
 import pandas as pd
 
-wl: pd.Series = pd.read_table("./wordlist/wordlist.txt").squeeze()
+wl: pd.Series = pd.read_table("./wordlist/wordlist-german.txt").squeeze()
+wl: pd.Series = wl.str.lower()
 
+for k, r in {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}.items():
+    wl = wl.str.replace(k, r)
+    
 wl5 = wl[wl.str.len() == 5]
-wl5 = wl5[~wl5.str.contains(r"'")]
-wl5 = wl5[~wl5.str.contains(r"-")]
-wl5 = wl5[~wl5.str.contains(r"/")]
-wl5 = wl5[~wl5.str.contains(r"\(")]
-wl5 = wl5[~wl5.str.contains(r"\)")]
+
+exclude = [r"'", r"-", r"/", r"\(", r"\)", r"\x03", r"\x07", r"\x08", r"\.", r"ø", r"å", r"é", r"á", r"ó", r"ç", r"è", r"ê", r"ë", r"ñ", r"ô", r"í", r"à"]
+for e in exclude:
+    wl5 = wl5[~wl5.str.contains(e)]
+
 wl5: pd.Series = wl5.reset_index(drop=True).squeeze()
 
 c = [{}, {}, {}, {}, {}]
@@ -48,5 +52,20 @@ for i in words.keys():
         big = list(words.keys())[h]
     h += 1
 
-print(biggest)
-print(big)
+
+for i in range(len(c)):
+    print(len(c[i]))
+
+k = [[], [], [], [], []]
+
+for i in range(len(c)):
+    k[i] = list(c[i].keys())
+
+for i in range(len(k)):
+    k[i].sort()
+
+print(k[0])
+print(k[1])
+print(k[2])
+print(k[3])
+print(k[4])
