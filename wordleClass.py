@@ -28,29 +28,38 @@ class Wordle():
 
         self.bestWord = "cares"
 
-        self.question = "What's the result? (\"-\" for grey; \"y\" for yellow; \"g\" for green)"
+        self.question = "What's the result? (\"-\" for grey; \"y\" for yellow; \"g\" for green): "
 
     def nextWord(self):
         if(self.guesses == 0):
             print("1. Word: ", self.bestWord)
             self.inp = input(self.question)
+
         elif(self.guesses <= 5):
             self.bestWord = self.getWord()
 
             print(self.guesses, ". Word: ", self.bestWord)
             self.inp = input(self.question)
-
+        print(self.bestWord)
         for i in range(5):
+
+            self.letter.append("")
+
             if(self.inp[i] == "-"):
-                # print("-")
-                self.exclude += self.inp[i]
+                self.exclude += self.bestWord[i]
+                self.letter[i] = self.exclude
+                self.letter[i] = "[^" + self.letter[i] + "]"
+
             elif(self.inp[i] == "y"):
-                # print("y") 
                 self.include_l += self.inp[i]
+
             elif(self.inp[i] == "g"):
-                print("g")
+                self.letter[i] = self.bestWord[i]
+
             else:
                 print("HS")
+
+            print(self.letter)
 
 
         self.guesses += 1
