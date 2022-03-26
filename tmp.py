@@ -1,18 +1,19 @@
 import string
-from traceback import print_tb
-from xmlrpc.client import FastParser
 import pandas as pd
 import numpy as np
 
 wl: pd.Series = pd.read_table("./wordlist/wordlist.txt").squeeze()
 
 wl = wl.str.lower()
+
 for k, r in {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}.items():
     wl = wl.str.replace(k, r)
+
+exclude = [r"'", r"-", r"/", r"\(", r"\)", r"\x03", r"\x07", r"\x08", r"\.", r"ø", r"å", r"é", r"á", r"ó", r"ç", r"è", r"ê", r"ë", r"ñ", r"ô", r"í", r"à"]
+for e in exclude:
+    wl = wl[~wl.str.contains(e)]
+
 wl = wl[wl.str.len() == 5]
-wl = wl[~wl.str.contains(r"-")]
-wl = wl[~wl.str.contains(r"\(")]
-wl = wl[~wl.str.contains(r"\)")]
 wl: pd.Series = wl.reset_index(drop=True).squeeze()
 
 
