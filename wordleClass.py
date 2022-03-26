@@ -7,7 +7,6 @@ class Wordle():
         self.wl: pd.Series = pd.read_table("./wordlist/wordlist-german.txt").squeeze()
         self.wl: pd.Series = self.wl.str.lower()
 
-
         for k, r in {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}.items():
             self.wl = self.wl.str.replace(k, r)
 
@@ -40,8 +39,10 @@ class Wordle():
 
             print(self.guesses, ". Word: ", self.bestWord)
             self.inp = input(self.question)
-        print(self.bestWord)
-        for i in range(5):
+        
+        self.letter = []
+            
+        for i in range(len(self.inp)):
 
             self.letter.append("")
 

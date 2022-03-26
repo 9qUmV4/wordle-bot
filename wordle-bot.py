@@ -13,27 +13,27 @@ wl: pd.Series = wl.reset_index(drop=True).squeeze()
 
 letter = []
 
-exclude = "fotzamhd"
-include_l = "re"
+exclude = "a"
+include_l = ""
 
 include_l = list(include_l)
 for l in include_l:
     wl: pd.Series = wl[wl.str.contains(l)]
 
 letter.append(  exclude + ""  )
-letter.append(  exclude + "r"  )
 letter.append(  exclude + ""  )
-letter.append(  exclude + "e"  )
+letter.append(  exclude + ""  )
+letter.append(  exclude + ""  )
 letter.append(  exclude + ""  )
 
 for i in range(len(letter)):
     letter[i] = "[^" + letter[i] + "]"
 
-# letter[0] = "s"
-letter[1] = "e"
-letter[2] = "r"
-# letter[3] = "s"
-letter[4] = "e"
+# letter[0] = ""
+# letter[1] = ""
+# letter[2] = ""
+# letter[3] = ""
+# letter[4] = ""
 
 
 pattern = r"^{0[0]}{0[1]}{0[2]}{0[3]}{0[4]}$".format(letter)
