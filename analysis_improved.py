@@ -31,8 +31,8 @@ dt_cn = (dt_c / len(wl)) * 100
 
 print(dt_cn)
 
-for col in range(len(dt.columns)):
-    dt.iloc[: col] = 
+# for col in range(len(dt.columns)):
+#     dt.iloc[: col] = 
 
 
-dt_p = 
+# dt_p = 
