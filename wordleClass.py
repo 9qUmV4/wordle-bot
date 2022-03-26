@@ -12,7 +12,8 @@ class Wordle():
 
         self.wl = self.wl[self.wl.str.len() == 5]
 
-        exclude = [r"'", r"-", r"/", r"\(", r"\)", r"\x03", r"\x07", r"\x08", r"\.", r"ø", r"å", r"é", r"á", r"ó", r"ç", r"è", r"ê", r"ë", r"ñ", r"ô", r"í", r"à"]
+        exclude = [r"'", r"-", r"/", r"\(", r"\)", r"\x03", r"\x07", r"\x08", r"\.", r"ø", 
+                   r"å", r"é", r"á", r"ó", r"ç", r"è", r"ê", r"ë", r"ñ", r"ô", r"í", r"à"]
         for e in exclude:
             self.wl = self.wl[~self.wl.str.contains(e)]
         
@@ -21,9 +22,13 @@ class Wordle():
         self.letter = []
 
         self.exclude = ""
+        self.exclude_y = [[], [], [], [], []]
         self.include_l = ""
 
         self.guesses = 0
+
+        self.pattern = r""
+        self.HiLtI:pd.Series
 
         self.bestWord = "cares"
 
@@ -48,22 +53,34 @@ class Wordle():
 
             if(self.inp[i] == "-"):
                 self.exclude += self.bestWord[i]
-                self.letter[i] = self.exclude
+                self.letter[i] = self.exclude + self.exclude_y[i]
                 self.letter[i] = "[^" + self.letter[i] + "]"
 
             elif(self.inp[i] == "y"):
                 self.include_l += self.inp[i]
+                self.exclude_y[i] = self.inp[i]
 
             elif(self.inp[i] == "g"):
-                self.letter[i] = self.bestWord[i]
+                self.letter[i] = self.inp[i]
 
             else:
                 print("HS")
 
-            print(self.letter)
+        print(self.letter)
 
+        self.pattern()
 
         self.guesses += 1
 
     def getWord(self):
         pass
+
+    def pattern(self):
+        self.attern = r"^{0[0]}{0[1]}{0[2]}{0[3]}{0[4]}$".format(self.letter)
+        print(self.pattern)
+
+        self.HiLtI = self.wl[self.wl.str.match(self.pattern)]
+        self.HiLtI: pd.Series = self.HiLtI.reset_index(drop=True).squeeze()
+
+        print(self.HiLtI.head(50))
+        print("Hits:", len(self.HiLtI))
