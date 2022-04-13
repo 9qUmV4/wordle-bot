@@ -1,19 +1,13 @@
 import pandas as pd
+from functions import sort_py_percentage
+from imports import import_wordlist
 
-wl: pd.Series = pd.read_table("./wordlist/wordlist-german.txt").squeeze()
 
-wl: pd.Series = wl.str.lower()
-for k, r in {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}.items():
-    wl = wl.str.replace(k, r)
-wl = wl[wl.str.len() == 5]
-wl = wl[~wl.str.contains(r"-")]
-wl = wl[~wl.str.contains(r"\(")]
-wl = wl[~wl.str.contains(r"\)")]
-wl: pd.Series = wl.reset_index(drop=True).squeeze()
+wl = import_wordlist.read("./wordlist/wordlist.txt")
 
 letter = []
 
-exclude = "a"
+exclude = ""
 include_l = ""
 
 include_l = list(include_l)
@@ -42,6 +36,6 @@ print(pattern)
 HiLtI = wl[wl.str.match(pattern)]
 HiLtI: pd.Series = HiLtI.reset_index(drop=True).squeeze()
 
-print(HiLtI.head(50))
+print(HiLtI)
+print(sort_py_percentage(HiLtI))
 print("Hits:", len(HiLtI))
-
