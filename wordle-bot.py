@@ -29,13 +29,15 @@ for i in range(len(letter)):
 # letter[3] = ""
 # letter[4] = ""
 
-
+# TODO escape regex chars
 pattern = r"^{0[0]}{0[1]}{0[2]}{0[3]}{0[4]}$".format(letter)
-print(pattern)
+# print(pattern)
 
 HiLtI = wl[wl.str.match(pattern)]
 HiLtI: pd.Series = HiLtI.reset_index(drop=True).squeeze()
 
-print(HiLtI)
-print(sort_py_percentage(HiLtI))
-print("Hits:", len(HiLtI))
+if isinstance(HiLtI, str):
+    print("The only word:", HiLtI)
+else:
+    print("Hits:", len(HiLtI))
+    print(sort_py_percentage(HiLtI))
