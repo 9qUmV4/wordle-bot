@@ -8,7 +8,7 @@ from functions import sort_py_percentage
 path = pathlib.Path("./wordlist/wordlist.txt")
 # path = pathlib.Path("./wordlist/wordlist-german.txt")
 
-wl = import_wordlist.read(path)
+wl = import_wordlist.read(path, 5)
 
 # Only use words of len 5
 wl = wl[wl.str.len() == 5]

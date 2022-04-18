@@ -3,7 +3,7 @@ import pathlib
 import pandas as pd
 import numpy as np
 
-def read(path: Union[str, pathlib.Path]) -> pd.DataFrame:
+def read(path: Union[str, pathlib.Path], length) -> pd.DataFrame:
 
     if isinstance(path, str):
         path = pathlib.Path(path)
@@ -25,5 +25,9 @@ def read(path: Union[str, pathlib.Path]) -> pd.DataFrame:
     exclude = [r"'", r"-", r"/", r"\(", r"\)", r"\x03", r"\x07", r"\x08", r"\.", r"ø", r"å", r"é", r"á", r"ó", r"ç", r"è", r"ê", r"ë", r"ñ", r"ô", r"í", r"à"]
     for e in exclude:
         wl = wl[~wl.str.contains(e)]
+
+    # Only use words of len length
+    wl = wl[wl.str.len() == length]
+    wl: pd.Series = wl.reset_index(drop=True).squeeze()
 
     return wl
