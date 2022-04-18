@@ -1,23 +1,17 @@
 import pandas as pd
+import pathlib
+from functions import sort_py_percentage
+from imports import import_wordlist
+
 
 class Wordle():
     
     def __init__(self) -> None:
 
-        self.wl: pd.Series = pd.read_table("./wordlist/wordlist-german.txt").squeeze()
-        self.wl: pd.Series = self.wl.str.lower()
+        self.path = pathlib.Path("./wordlist/wordlist.txt")
+        # self.path = pathlib.Path("./wordlist/wordlist-german.txt")
 
-        for k, r in {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}.items():
-            self.wl = self.wl.str.replace(k, r)
-
-        self.wl = self.wl[self.wl.str.len() == 5]
-
-        exclude = [r"'", r"-", r"/", r"\(", r"\)", r"\x03", r"\x07", r"\x08", r"\.", r"ø", 
-                   r"å", r"é", r"á", r"ó", r"ç", r"è", r"ê", r"ë", r"ñ", r"ô", r"í", r"à"]
-        for e in exclude:
-            self.wl = self.wl[~self.wl.str.contains(e)]
-        
-        self.wl: pd.Series = self.wl.reset_index(drop=True).squeeze()
+        self.wl = import_wordlist.read(self.path, 5)
 
         self.letter = []
 
@@ -72,15 +66,12 @@ class Wordle():
 
         self.guesses += 1
 
-    def getWord(self):
-        pass
+    def getWord(self, wl_hit):
+        self.wl_sort = sort_py_percentage(wl_hit)
 
     def pattern(self):
-        self.attern = r"^{0[0]}{0[1]}{0[2]}{0[3]}{0[4]}$".format(self.letter)
-        print(self.pattern)
+        self.pattern = r"^{0[0]}{0[1]}{0[2]}{0[3]}{0[4]}$".format(self.letter)
+        # print(self.pattern)
 
         self.HiLtI = self.wl[self.wl.str.match(self.pattern)]
         self.HiLtI: pd.Series = self.HiLtI.reset_index(drop=True).squeeze()
-
-        print(self.HiLtI.head(50))
-        print("Hits:", len(self.HiLtI))
