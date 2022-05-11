@@ -2,7 +2,7 @@ import pandas as pd
 import string
 import numpy as np
 
-def sort_py_percentage(wl: pd.Series):
+def sort_py_percentage(wl: pd.Series) -> pd.Series:
     # Split up string into single chars
     dt = wl.str.split("", expand=True)
     dt: pd.DataFrame = dt.drop(columns=[0, 6]) # Drop start and end of string (Whitespace chars)
@@ -34,6 +34,6 @@ def sort_py_percentage(wl: pd.Series):
     wl_per_sort = wl_per.sort_values('total', axis='index', ascending=False)
 
     wl_per_sort = wl_per_sort.loc[:, ['total', 'word']]
-    wl_per_sort = wl_per_sort.set_index('word')
+    wl_per_sort = wl_per_sort.set_index('word').squeeze()
 
     return wl_per_sort

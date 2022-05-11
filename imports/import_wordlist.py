@@ -3,7 +3,7 @@ import pathlib
 import pandas as pd
 import numpy as np
 
-def read(path: Union[str, pathlib.Path], length) -> pd.DataFrame:
+def read(path: Union[str, pathlib.Path], length) -> pd.Series:
 
     if isinstance(path, str):
         path = pathlib.Path(path)
