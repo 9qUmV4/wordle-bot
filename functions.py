@@ -3,6 +3,8 @@ import string
 import numpy as np
 
 def sort_py_percentage(wl: pd.Series) -> pd.Series:
+    """Takes a pd.Series list containing words and returns them sorted by percentage. 
+    Returns a pd.Series with the word in the Index and percentage as value"""
     # Split up string into single chars
     dt = wl.str.split("", expand=True)
     dt: pd.DataFrame = dt.drop(columns=[0, 6]) # Drop start and end of string (Whitespace chars)

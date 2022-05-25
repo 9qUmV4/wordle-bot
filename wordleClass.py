@@ -5,7 +5,7 @@ from imports import import_wordlist
 
 
 class Wordle:
-    def __init__(self) -> None:
+    def __init__(self, length: int = 5) -> None:
 
         lang = input(
             "Select the language of the Wordle game (de - deutsch, en- english): "
@@ -20,7 +20,13 @@ class Wordle:
             )
             exit()
 
-        self.wordlength = 5
+
+        if not isinstance(length, int):
+            raise TypeError("Length must be an integer.")
+        if not length > 0:
+            raise ValueError("Length must be greater than zero.")
+
+        self.wordlength = length
 
         self.sorted_wordlist: pd.Series | None = None
         self.possible_wordlist: pd.Series = import_wordlist.read(
@@ -47,7 +53,7 @@ class Wordle:
 
             print(self.guesses + 1, ". Word: ", self.bestWord)
             inp = input(self.question).lower().strip()
-            if not len(inp) == self.wordlength: exit("This is not a valid input.")
+            if not len(inp) == self.wordlength: exit("This is not a valid input.") 
 
             self.letter, self.greenFlag = self.analyzeInput(inp)
 
