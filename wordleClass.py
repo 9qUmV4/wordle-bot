@@ -20,7 +20,6 @@ class Wordle:
             )
             exit()
 
-
         if not isinstance(length, int):
             raise TypeError("Length must be an integer.")
         if not length > 0:
@@ -42,9 +41,12 @@ class Wordle:
 
         self.guesses = 0
 
+        self.exclude_y = [[], [], [], [], []]
+        self.exclude = ""
+
         self.greenFlag = [False for i in range(self.wordlength)]
 
-    def solveWord(self):
+    def nextWord(self) -> None:
 
         if self.guesses <= 5:
 
@@ -53,7 +55,8 @@ class Wordle:
 
             print(self.guesses + 1, ". Word: ", self.bestWord)
             inp = input(self.question).lower().strip()
-            if not len(inp) == self.wordlength: exit("This is not a valid input.") 
+            if not len(inp) == self.wordlength:
+                exit("This is not a valid input.")
 
             self.letter, self.greenFlag = self.analyzeInput(inp)
 
@@ -63,44 +66,30 @@ class Wordle:
 
             self.guesses += 1
 
-    def getBestWords(self, wl_hit):
+    def getBestWords(self, wl_hit: pd.Series) -> pd.Series:
 
         return sort_py_percentage(wl_hit)
 
-    def pattern(self):
-
-        for i in range(len(self.letter)):
-            self.letter[i] = (
-                "[^" + self.letter[i] + "]"
-            )  # TODO inline if statement: expression_if_true if condition else expression_if_false
-            # self.letter[i] = "[^" + self.letter[i] + "]" if self.greenFlag == False else "[" + self.letter[i] + "]"
-        self.pattern = r"^{0[0]}{0[1]}{0[2]}{0[3]}{0[4]}$".format(self.letter)
-        print(self.pattern)
-
-        self.possible_wordlist = self.possible_wordlist[self.possible_wordlist.str.match(self.pattern)]
-        self.possible_wordlist: pd.Series = self.possible_wordlist.reset_index(drop=True).squeeze()
-
-    def analyzeInput(self, inp):
+    def analyzeInput(self, inp: str) -> tuple:
 
         if inp == "ggggg":
             exit("ggwp eZ in " + str(self.guesses + 1) + " trys")
 
         else:
             letter = [[], [], [], [], []]
-            bestWord = []
-            exclude_y = [[], [], [], [], []]
+            bestWord = self.bestWord
+            exclude_y = self.exclude_y
             include_l = ""
-            exclude = ""
             greenFlag = self.greenFlag
 
             count = 0
 
             for i in inp:
-                letter.append("")
+                letter[count].append("")
 
                 if i == "-":
-                    exclude += bestWord[count]
-                    letter[count] = self.exclude + exclude_y[i]
+                    self.exclude += bestWord[count]
+                    letter[count] = self.exclude + exclude_y[count]
 
                 elif i == "y":
                     include_l += inp[count]
@@ -112,7 +101,27 @@ class Wordle:
 
                 else:
                     exit("This is not a valid input")
-                
+
                 count += 1
 
             return letter, greenFlag
+
+    def pattern(self) -> None:
+        
+        for l in self.include_l:
+            wl: pd.Series = wl[wl.str.contains(l)]
+
+        for i in range(len(self.letter)):
+            self.letter[i] = (
+                "[^" + self.letter[i] + "]"
+            )  # TODO inline if statement: expression_if_true if condition else expression_if_false
+            # self.letter[i] = "[^" + self.letter[i] + "]" if self.greenFlag == False else "[" + self.letter[i] + "]"
+        self.pattern = r"^{0[0]}{0[1]}{0[2]}{0[3]}{0[4]}$".format(self.letter)
+        print(self.pattern)
+
+        self.possible_wordlist = self.possible_wordlist[
+            self.possible_wordlist.str.match(self.pattern)
+        ]
+        self.possible_wordlist: pd.Series = self.possible_wordlist.reset_index(
+            drop=True
+        ).squeeze()
