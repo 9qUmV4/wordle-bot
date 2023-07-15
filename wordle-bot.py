@@ -1,45 +1,91 @@
-import pandas as pd
-from functions import sort_py_percentage
-from imports import import_wordlist
+#!/usr/bin/env python3
+
+# Solver for wordle: https://www.nytimes.com/games/wordle/index.html
+# Copyright Illumihax, 9qUmV4
+
+import argparse
+import logging
+import sys
+
+from wordleClass import WordleSolver
+
+# Logging
+LOG_LEVEL = {
+    "CRITICAL": logging.CRITICAL, 
+    "ERROR": logging.ERROR, 
+    "WARNING": logging.WARNING, 
+    "INFO": logging.INFO, 
+    "DEBUG": logging.DEBUG
+}
+
+# arg parsing
+arg_parser = argparse.ArgumentParser(description="A generator for wordle: https://www.nytimes.com/games/wordle/index.html", add_help=True)
+arg_parser.add_argument(
+    "--language",
+    action="store",
+    required=False,
+    default="",
+    type=str,
+    help="Set the language (en-english, de-german) of wordle. Asks the user if not given.",
+)
+arg_parser.add_argument(
+    "--lenght",
+    action="store",
+    required=False,
+    default=5,
+    type=int,
+    help="Set the lenght of wordle. Defaults to 5.",
+)
+arg_parser.add_argument(
+    "--log-level",
+    action="store",
+    required=False,
+    choices=LOG_LEVEL.keys(),
+    default="WARNING",
+    help="Set the log level for stdout."
+)
 
 
-wl = import_wordlist.read("./wordlist/wordlist.txt", 5)
+def setup_logging(level:str):
+    """Setup and start logging.
 
-print(wl)
+    Args:
+        level (str): The log level to use.
+    """
+    log = logging.getLogger(__name__).parent
+    log.setLevel(logging.DEBUG)
 
-letter = []
+    # stderr logging
+    log_console_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s: %(message)s')
+    log_console_handler = logging.StreamHandler(sys.stdout)
+    log_console_handler.setLevel(level=LOG_LEVEL[level])
+    log_console_handler.setFormatter(log_console_formatter)
 
-exclude = "y"
-include_l = ""
+    log.addHandler(log_console_handler)
 
-include_l = list(include_l)
-for l in include_l:
-    wl: pd.Series = wl[wl.str.contains(l)]
+    # Say hello
+    logging.info("Started logging.")
+    
 
-letter.append(  exclude + ""  )
-letter.append(  exclude + ""  )
-letter.append(  exclude + ""  )
-letter.append(  exclude + ""  )
-letter.append(  exclude + ""  )
+if __name__ == "__main__":
+    # Parse call args
+    call_args = arg_parser.parse_args()
+    
+    # Setup and start logging
+    setup_logging(call_args.log_level)
+    
+    logging.info(f"Call arguments: {str(call_args)}")
+    
+    
+    # Run wordle bot
+    wordleSolver = WordleSolver(
+        length=call_args.lenght,
+        language=call_args.language if call_args.language else None
+    )
 
-for i in range(len(letter)):
-    letter[i] = "[^" + letter[i] + "]"
-
-# letter[0] = ""
-# letter[1] = "o"
-# letter[2] = "o"
-# letter[3] = "e"
-# letter[4] = "s"
-
-# TODO escape regex chars
-pattern = r"^{0[0]}{0[1]}{0[2]}{0[3]}{0[4]}$".format(letter)
-print(pattern)
-
-HiLtI = wl[wl.str.match(pattern)]
-HiLtI: pd.Series = HiLtI.reset_index(drop=True).squeeze()
-
-if isinstance(HiLtI, str):
-    print("The only word:", HiLtI)
-else:
-    print("Hits:", len(HiLtI))
-    print(sort_py_percentage(HiLtI))
+    try:
+        while True:
+            wordleSolver.nextWord()
+    except KeyboardInterrupt:
+        logging.info("Keyboard interrupt received, exiting")
+        sys.exit(0)

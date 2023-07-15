@@ -1,8 +1,24 @@
-from typing import Union
 import pathlib
+from typing import Union
+
 import pandas as pd
 
+
 def read(path: Union[str, pathlib.Path], length: int) -> pd.Series:
+    """Imports the list with all words
+
+    Args:
+        path (Union[str, pathlib.Path]): Path to wordlist
+        length (int): Lenght of words to keep, must be lenght of wordle
+
+    Raises:
+        TypeError: Raised if filepath is not string nor Path
+        TypeError: Raised if wordle lenght is not an integer
+        ValueError: Raised if leanght is 0 or lower
+
+    Returns:
+        pd.Series: Wordlist as pd.Series
+    """
 
     if isinstance(path, str):
         path = pathlib.Path(path)
@@ -23,9 +39,11 @@ def read(path: Union[str, pathlib.Path], length: int) -> pd.Series:
 
     # Replace German umlauts
     for k, r in {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}.items():
+    # TODO no for loop
         wl = wl.str.replace(k, r)
 
     # Exclude special characters, that can't be typed
+    # TODO positiv not negative filtering
     exclude = [r"'", r"-", r"/", r"\(", r"\)", r"\x03", r"\x07", r"\x08", r"\.", r"ø", r"å", r"é", r"á", r"ó", r"ç", r"è", r"ê", r"ë", r"ñ", r"ô", r"í", r"à"]
     for e in exclude:
         wl = wl[~wl.str.contains(e)]
