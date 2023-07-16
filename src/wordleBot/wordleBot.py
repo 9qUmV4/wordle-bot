@@ -7,7 +7,7 @@ import argparse
 import logging
 import sys
 
-from .wordleClass import WordleSolver
+from .wordleSolver import WordleSolver
 
 # Logging
 LOG_LEVEL = {
