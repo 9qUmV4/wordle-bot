@@ -10,4 +10,5 @@ from .wordleBot import main
 #     print(f"Error: {e}", file=sys.stderr)
 # sys.exit(retCode)
 
-sys.exit(main())
+cli = WordleBotCLI()
+sys.exit(cli(sys.argv))
