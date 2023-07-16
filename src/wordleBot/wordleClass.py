@@ -1,5 +1,6 @@
 import logging
 import re
+import string
 import sys
 from pathlib import Path
 
@@ -17,7 +18,7 @@ class WordNotFoundError(Exception):
 class WordleSolver:
     """Solver for wordle
     """
-    def __init__(self, length: int = 5, language: str | None = None) -> None:
+    def __init__(self, length: int = 5, language: str | None = None, highlightsAllDuplicates: bool = False) -> None:
         """Create a solver
 
         Args:
@@ -42,6 +43,11 @@ class WordleSolver:
         if not length > 0:
             raise ValueError("Length must be greater than zero.")
         self.wordLength: int = length
+        
+        # Check and store highlightsAllDupicates
+        if not isinstance(highlightsAllDuplicates, bool):
+            raise TypeError("Param highlightsAllDuplicates must be a bool")
+        self.highlightsAllDuplicates = highlightsAllDuplicates
 
         # Read in wordlist
         self.wordlist: pd.Series = read_wordlist(
@@ -163,25 +169,60 @@ class WordleSolver:
         if feedback == "ggggg":
             sys.exit(0)
             
-        for i, fb, letter in zip(range(self.wordLength), feedback, self.currentGuess):
+        
+        # The logic to use for one or multible of one letter (*/_=placeholder/empty):
+        # | Word  | NYTimes               | Wordle Archive                 |
+        # |       |                       | (highlightsAllDuplicates=True) |
+        # |-------|-----------------------|--------------------------------|
+        # |       | inc     ex      flag  | inc     ex      flag           |
+        # | g**** | x       _____   x____ | x       _____   x____          |
+        # | *y*** | x       _x___   _____ | x       _x___   _____          |
+        # | **-** |         xxxxx   _____ |         xxxxx   _____          |
+        # | gy*** | xx      _x___   x____ | x       _x___   x____          |
+        # | g*-** | x       _xxxx   x____ |         ERROR                  |
+        # | *y-** | x       _xx__   _____ |         ERROR                  |
+        # | gy-** | xx      _xx__   x____ |         ERROR                  |
+        # | g***g | xx      _____   x___x | xx      _____   x___x          |
+        # | *y**y | xx      _x__x   _____ | x       _x__x   _____          |
+        # | **-*- |         xxxxx   _____ |         xxxxx   _____          |
+            
+        addToIncludedLetters = ""
+        yellowLetters = "" # All yellow reported letter in this round
+            
+        for i, fb, letter in sorted(zip(range(self.wordLength), feedback, self.currentGuess), key=lambda x: {"g": 0, "y": 1, "-": 2}[x[1]]):
             match fb:
-                case "-":   # Letter not in word
-                    for i_ex in range(self.wordLength): 
-                        if letter not in self.excludedLetters[i_ex]:
-                            self.excludedLetters[i_ex] += letter
+                case "g":   # Letter correct
+                    self.greenFlag[i] = letter
+                    addToIncludedLetters += letter
                 case "y":   # Letter in word, but wrong position
+                    addToIncludedLetters += letter
                     # If letter is not already in excluded letters
                     if letter not in self.excludedLetters[i]:
                         self.excludedLetters[i] += letter
-                    if letter not in self.includedLetters:
-                        self.includedLetters += letter
-                case "g":   # Letter correct
-                    self.greenFlag[i] = letter
-                    if letter not in self.includedLetters:
-                        self.includedLetters += letter
+                    yellowLetters += letter
+                case "-":   # Letter less or not in word
+                    if letter in yellowLetters:
+                        self.excludedLetters[i] += letter # Letter is not on this position
+                    elif letter in self.greenFlag: # Other occurents of letter is green
+                        for i_ex in range(self.wordLength):
+                            if letter != self.greenFlag[i_ex] and (letter not in self.excludedLetters[i_ex]):
+                                self.excludedLetters[i_ex] += letter
+                    else: # Letter is not in word
+                        for i_ex in range(self.wordLength):
+                            if letter not in self.excludedLetters[i_ex]:
+                                self.excludedLetters[i_ex] += letter
                 case _ as capture:
                     raise ValueError(f"This is a bug, please report! Captured the following: {capture !r}")        
-                
+        
+        # Add to include letters to included letters
+        addToIncludedLetters_woDup = "".join(set(addToIncludedLetters)) # Remove dupicates
+        if self.highlightsAllDuplicates:
+            # If flag is set, drop duplicates
+            addToIncludedLetters = addToIncludedLetters_woDup
+        for l in addToIncludedLetters_woDup:
+            self.includedLetters = self.includedLetters.replace(l, "")
+            self.includedLetters += l * addToIncludedLetters.count(l)
+        
         logging.info(f"greenFlag: {self.greenFlag}")
         logging.info(f"includedLetters: {self.includedLetters}")
         logging.info(f"excludedLetters: {self.excludedLetters}")

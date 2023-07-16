@@ -27,6 +27,13 @@ def main(args=None) -> int:
         description="A generator for wordle: https://www.nytimes.com/games/wordle/index.html", add_help=True
     )
     arg_parser.add_argument(
+        "--highlights-all-duplicate-letters",
+        action="store_true",
+        help="Set this flag, if your wordle highlights all dublicate letters when only one (ore more) is in word. \
+              If not set, duplicate letters in word get feedback and remaining ones are gray. This is the default.\
+              For the NY Times, omit this flag.",
+    )
+    arg_parser.add_argument(
         "--language",
         action="store",
         required=False,
@@ -72,7 +79,8 @@ def main(args=None) -> int:
     # Run wordle bot
     wordleSolver = WordleSolver(
         length=options.lenght,
-        language=options.language if options.language else None
+        language=options.language if options.language else None,
+        highlightsAllDuplicates=options.highlights_all_duplicate_letters,
     )
 
     try:
