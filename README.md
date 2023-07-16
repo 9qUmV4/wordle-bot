@@ -9,3 +9,7 @@ python3 wordle-bot.py --help
 ```
   
 The english word list we used is [this](https://www-personal.umich.edu/~jlawler/wordlist.html) and the german wordlist [this](https://gist.github.com/MarvinJWendt/2f4f4154b8ae218600eb091a5706b5f4)
+
+## Improvements
+- [ ] Downvote words with duplicate letters, because words like "sissy" get a good probability, but are bad to get new information.
+- [ ] Imput checking: If feedback on duplicate letter is ambiguis (e.g. gray and yellow)

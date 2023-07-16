@@ -5,16 +5,34 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Run wordleTest.py",
+            "name": "Python: Module wordleBot",
+            "type": "python",
+            "request": "launch",
+            "module": "wordleBot",
+            "justMyCode": true,
+            "args": [
+                "--language",
+                "en",
+                "--lenght",
+                "5",
+                "--log-level",
+                "DEBUG"
+            ]
+        },
+        {
+            "name": "Python: Run wordleBot.py",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/wordle-bot.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--language", "en",
-                "--lenght", "5",
-                "--log-level", "DEBUG"
+                "--language",
+                "en",
+                "--lenght",
+                "5",
+                "--log-level",
+                "DEBUG"
             ]
         }
     ]

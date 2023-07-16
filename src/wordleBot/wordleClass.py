@@ -5,13 +5,20 @@ from pathlib import Path
 
 import pandas as pd
 
-from functions import sort_py_percentage
-from imports import import_wordlist
+from .functions import sort_py_percentage, read as read_wordlist
+
+
+class WordNotFoundError(Exception):
+    """Raised if no word is found
+    """
+    pass
 
 
 class WordleSolver:
+    """Solver for wordle
+    """
     def __init__(self, length: int = 5, language: str | None = None) -> None:
-        """Create a solver for one wordle
+        """Create a solver
 
         Args:
             length (int, optional): Lenght of word. Defaults to 5.
@@ -36,11 +43,21 @@ class WordleSolver:
             raise ValueError("Length must be greater than zero.")
         self.wordLength: int = length
 
-        # Read in wordlist as all possible words
-        self.possibleWords: pd.Series = import_wordlist.read(
+        # Read in wordlist
+        self.wordlist: pd.Series = read_wordlist(
             self.path, 
             self.wordLength
         )
+        # And reset
+        self.reset()
+        return None
+        
+
+    def reset(self) -> None:
+        """Reset to get ready to solve next wordle.
+        """
+        # Populate possibleWords with the wordlist
+        self.possibleWords: pd.Series = self.wordlist.copy(deep=True)
 
         # Current guess of word
         self.currentGuess: str = ""
@@ -56,7 +73,8 @@ class WordleSolver:
         self.includedLetters: str = ""
         
         # list of letters which are set (green). None means still open letter position
-        self.greenFlag: list[str] = [None for _ in range(self.wordLength)]
+        self.greenFlag: list[str] = [None for _ in range(self.wordLength)]   
+        return None
 
 
     def nextWord(self) -> None:
@@ -71,23 +89,35 @@ class WordleSolver:
 
             # Print the current guess
             logging.debug(f"Current word guess: {self.currentGuess}")
-            print(self.guessCounter, "Word:", self.currentGuess)
+            print(f"{self.guessCounter}. ({use_word + 1}/{len(sorted_wordlist)}) WORD: '{self.currentGuess}'")
 
             # Get user feedback for the current guess
             user_feedback = self.getUserFeedback()
             match user_feedback:
                 case "q":
-                    logging.info("User quit program")
-                    sys.exit(0)
+                    logging.info("User quit: SIGNAL:reset")
+                    return ("SIGNAL:quit")
                 case "n" | "next":
                     pass # Loop again
+                case "r":
+                    logging.info("User send reset: SIGNAL:reset")
+                    return ("SIGNAL:reset")
+                case "ggggg":
+                    print("Found word in " + str(self.guessCounter) + " trys!")
+                    logging.info("User found word: SIGNAL:wordfound")
+                    return ("SIGNAL:wordfound", {"word": self.currentGuess})
                 case _:
                     break
+        else:
+            logging.critical("Out of words. Did you make a typing misstake? If not, its a bug. Please Report.")
+            print("Out of words. Did you make a typing misstake? If not, its a bug. Please Report.")
+            sys.exit(1)
         
         # And analyse it
         self.analyzeInput(user_feedback)
 
         self.updatePossibleWords()
+        return ("SIGNAL:newguess", {"word": self.currentGuess, "feedback": user_feedback})
 
 
     def calculatePossibility(self, wordList: pd.Series) -> pd.Series:
@@ -112,12 +142,12 @@ class WordleSolver:
         while True:
             user_input = input( # TODO Add q for quit
                 'What\'s the result? ("-" for grey; "y" for yellow; "g" for green)\n'
-                + 'Use "q" to quit and "n" or "next" if word is unknown.           :'
+                + 'Use "q" to quit and "n" or "next" if word is unknown and "r" to reset.   :'
             ).lower().strip()
             
             # Check if lenght of input the same then lenght of search word
             # and if only chars from the set -yg got used.
-            if re.fullmatch(fr"[-yg]{{{self.wordLength}}}|q|n|next", user_input):
+            if re.fullmatch(fr"[-yg]{{{self.wordLength}}}|q|n|next|r", user_input):
                 return user_input
             
 
@@ -131,12 +161,8 @@ class WordleSolver:
             raise ValueError("Not a valid feedback")
 
         if feedback == "ggggg":
-            print("Found word in" + str(self.guessCounter) + " trys!")
             sys.exit(0)
             
-        # Clear self.includedLetters because we will populate it again
-        self.includedLetters = ""
-
         for i, fb, letter in zip(range(self.wordLength), feedback, self.currentGuess):
             match fb:
                 case "-":   # Letter not in word
@@ -147,12 +173,14 @@ class WordleSolver:
                     # If letter is not already in excluded letters
                     if letter not in self.excludedLetters[i]:
                         self.excludedLetters[i] += letter
-                    self.includedLetters += letter
+                    if letter not in self.includedLetters:
+                        self.includedLetters += letter
                 case "g":   # Letter correct
                     self.greenFlag[i] = letter
-                    # TODO del? self.includedLetters.replace(letter, "", 1) # Remove letter from included letters
+                    if letter not in self.includedLetters:
+                        self.includedLetters += letter
                 case _ as capture:
-                    raise ValueError(f"This is a bug, please report! Captured the following: {repr(capture)}")
+                    raise ValueError(f"This is a bug, please report! Captured the following: {capture !r}")        
                 
         logging.info(f"greenFlag: {self.greenFlag}")
         logging.info(f"includedLetters: {self.includedLetters}")
@@ -182,4 +210,4 @@ class WordleSolver:
         
         b_pos = self.possibleWords.str.fullmatch(reg_patter)
         
-        self.possibleWords = self.possibleWords[b_required & b_pos].reset_index(drop=True).squeeze()
+        self.possibleWords = self.possibleWords[b_required & b_pos].reset_index(drop=True).squeeze() # TODO remove squeeze
