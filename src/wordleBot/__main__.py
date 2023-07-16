@@ -1,6 +1,6 @@
 import sys
 
-from .wordleBot import main
+from .cli import WordleBotCLI
 
 # TODO Add stacktrace
 # retCode = 1
@@ -11,4 +11,4 @@ from .wordleBot import main
 # sys.exit(retCode)
 
 cli = WordleBotCLI()
-sys.exit(cli(sys.argv))
+sys.exit(cli.run())

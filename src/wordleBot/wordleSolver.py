@@ -1,16 +1,18 @@
 import logging
 import re
-import string
-import sys
 from pathlib import Path
 
 import pandas as pd
 
 from .functions import sort_py_percentage, read as read_wordlist
 
+__all__ = [
+    "WordNotFoundError",
+    "WordleSolver",
+]
 
 class WordNotFoundError(Exception):
-    """Raised if no word is found
+    """Word not found: Out of words or no words availible
     """
     pass
 
@@ -26,148 +28,209 @@ class WordleSolver:
             language (str | None, optional): Select the language of the wordle (en-english, de-german). Defaults to asking the user.
         """
         
-        # Select language
-        while language not in ("en", "de"):
-            language = input(
-                "Select the language of the Wordle game (de - deutsch, en - english): "
-            ).strip().lower()
+        # Check language and set path of wordlist accordingly
+        if not isinstance(language, str):
+            TypeError("Languange must be a string")
+        if language not in ["en", "de"]:
+            ValueError("Language must be 'en' or 'de'")
 
         if language == "en":
-            self.path = Path("./wordlist/wordlist.txt")
+            self._path = Path("./wordlist/wordlist.txt")
         elif language == "de":
-            self.path = Path("./wordlist/wordlist-german.txt")
+            self._path = Path("./wordlist/wordlist-german.txt")
 
         # Check lenght of word
         if not isinstance(length, int):
             raise TypeError("Length must be an integer.")
         if not length > 0:
             raise ValueError("Length must be greater than zero.")
-        self.wordLength: int = length
+        self._wordLength: int = length
         
         # Check and store highlightsAllDupicates
         if not isinstance(highlightsAllDuplicates, bool):
             raise TypeError("Param highlightsAllDuplicates must be a bool")
-        self.highlightsAllDuplicates = highlightsAllDuplicates
+        self._highlightsAllDuplicates = highlightsAllDuplicates
 
         # Read in wordlist
-        self.wordlist: pd.Series = read_wordlist(
+        self._wordlist: pd.Series = self._calculatePossibility(read_wordlist(
             self.path, 
             self.wordLength
-        )
+        ))
+        
         # And reset
         self.reset()
         return None
-        
+
 
     def reset(self) -> None:
         """Reset to get ready to solve next wordle.
         """
         # Populate possibleWords with the wordlist
-        self.possibleWords: pd.Series = self.wordlist.copy(deep=True)
+        self._possibleWords: pd.Series = self._wordlist.copy(deep=True)
 
         # Current guess of word
-        self.currentGuess: str = ""
+        self._currentGuess: str = ""
+        
+        # Index of current guessed word in self._possibleWords
+        self._currentGuessIndex: int = -1
 
         # Counter of guesses
-        self.guessCounter: int = 0
+        self._roundCounter: int = 1
 
         # List of strings of letters not allowed on the respective position.
         # One string per letter position
-        self.excludedLetters: list[str] = ["" for _ in range(self.wordLength)]
+        self._excludedLetters: list[str] = ["" for _ in range(self.wordLength)]
 
         # string of letters must be part of searched word but have a unknown position
-        self.includedLetters: str = ""
+        self._includedLetters: str = ""
         
         # list of letters which are set (green). None means still open letter position
-        self.greenFlag: list[str] = [None for _ in range(self.wordLength)]   
+        self._greenFlag: list[str] = [None for _ in range(self.wordLength)]   
         return None
 
 
-    def nextWord(self) -> None:
-        self.guessCounter += 1
-        
-        # Calculate the percetages for each word
-        sorted_wordlist = self.calculatePossibility(self.possibleWords)
-
-        for use_word in range(len(sorted_wordlist)):
-            # Guess the currently best word
-            self.currentGuess = sorted_wordlist.iat[use_word]
-
-            # Print the current guess
-            logging.debug(f"Current word guess: {self.currentGuess}")
-            print(f"{self.guessCounter}. ({use_word + 1}/{len(sorted_wordlist)}) WORD: '{self.currentGuess}'")
-
-            # Get user feedback for the current guess
-            user_feedback = self.getUserFeedback()
-            match user_feedback:
-                case "q":
-                    logging.info("User quit: SIGNAL:reset")
-                    return ("SIGNAL:quit")
-                case "n" | "next":
-                    pass # Loop again
-                case "r":
-                    logging.info("User send reset: SIGNAL:reset")
-                    return ("SIGNAL:reset")
-                case "ggggg":
-                    print("Found word in " + str(self.guessCounter) + " trys!")
-                    logging.info("User found word: SIGNAL:wordfound")
-                    return ("SIGNAL:wordfound", {"word": self.currentGuess})
-                case _:
-                    break
-        else:
-            logging.critical("Out of words. Did you make a typing misstake? If not, its a bug. Please Report.")
-            print("Out of words. Did you make a typing misstake? If not, its a bug. Please Report.")
-            sys.exit(1)
-        
-        # And analyse it
-        self.analyzeInput(user_feedback)
-
-        self.updatePossibleWords()
-        return ("SIGNAL:newguess", {"word": self.currentGuess, "feedback": user_feedback})
-
-
-    def calculatePossibility(self, wordList: pd.Series) -> pd.Series:
-        """Capsules sort_by_percentages.
-        Calculates for each word the possibility it is the right one. Returns a sorted list from best to worst
-
-        Args:
-            wl_hit (pd.Series): List of words to sort
+    @property
+    def path(self) -> Path:
+        """Path to used wordlist. Readonly
 
         Returns:
-            pd.Series: Sorted list with percentages as index and words as values, sorted from best to worst
+            Path: Path to used wordlist
         """
-        return sort_py_percentage(wordList)
+        return self._path
     
-    
-    def getUserFeedback(self) -> str:
-        """Gets user feedback for the current guessed word
+
+    @property
+    def wordLength(self) -> int:
+        """Length of the searched word. Readonly
 
         Returns:
-            str: Checked user feedback
+            int: Length of the searched word
         """
-        while True:
-            user_input = input( # TODO Add q for quit
-                'What\'s the result? ("-" for grey; "y" for yellow; "g" for green)\n'
-                + 'Use "q" to quit and "n" or "next" if word is unknown and "r" to reset.   :'
-            ).lower().strip()
-            
-            # Check if lenght of input the same then lenght of search word
-            # and if only chars from the set -yg got used.
-            if re.fullmatch(fr"[-yg]{{{self.wordLength}}}|q|n|next|r", user_input):
-                return user_input
+        return self._wordLength
+    
+    
+    @property
+    def possibleWords(self) -> list[str]:
+        """Returns a list of all possible words sorted from highest to lowest propability.
+        If you only want the next best word, use nextWord(). This will iterrate over all 
+        possible words.
+
+        Returns:
+            list[str]: List containing all possible words
+        """
+        return list(self._possibleWords.values)
+    
+    
+    @property
+    def lenght(self) -> int:
+        """Returns the current amount of possible words.
+        More performant than len(wordleSolver.possibleWords)
+
+        Returns:
+            int: Amount of possible words
+        """
+        return len(self._possibleWords)
+    
+    
+    @property
+    def guessIndex(self) -> int:
+        """Index of guess in possibleWords
+
+        Returns:
+            int: Index of guess
+        """
+        return self._currentGuessIndex
+    
+    
+    @property
+    def guess(self) -> str:
+        """Current guess
+
+        Returns:
+            str: Last word returned from nextWord()
+        """
+        
+    @property
+    def round(self) -> int:
+        """The current round. Increases if calculate() is called.
+
+        Returns:
+            int: current round
+        """
+        self._roundCounter
+        
+
+    def nextWord(self) -> str:
+        """Get the next best word to use. 
+        This iterrates over all possible words sorted from highest to lowest propability.
+        
+        Raises:
+            WordNotFoundError: If no more word is avilable, raises a WordNotFoundError().
+        
+        Returns:
+            str: Next best word to use
+        """
+        self._currentGuessIndex += 1
+        try:
+            self._currentGuess: str = str(self._possibleWords.iat[self._currentGuessIndex])
+            logging.debug(f"Current word guess: {self._currentGuess !r}")
+            return self._currentGuess
+        except IndexError:
+            logging.error("Reached end of list of possible words")
+            raise WordNotFoundError
             
 
-    def analyzeInput(self, feedback: str) -> tuple:
-        """Analyses the user feedback on current guessed word
+           # logging.critical("Out of words. Did you make a typing misstake? If not, its a bug. Please Report.")
+           # print("Out of words. Did you make a typing misstake? If not, its a bug. Please Report.")
+           # sys.exit(1)
+
+    
+    def calculate(self, feedback: str, *, wordOverride: str | None = None) -> bool:
+        """Calculates the new possible word based on provided feedback.
+        This will recalculate possible words based on the feedback for 
+        the last word returned by nextWord().
 
         Args:
-            feedback (str): Feedback for the current guessed word
+            feedback (str): Feedback must be a string with lenght of wordLenght. Use
+                            - "g" for green/correct letter,
+                            - "y" for yellow/letter in word, but wrong position and
+                            - "-" for gray/letter not in word.
+                            Example "g-yg-" means first and fourth letter are correct, 
+                            third letter is not in this position and second and five 
+                            letter are not in word.
+            wordOverride (str | None): Override the word for which the feedback applies. 
+                                       Must be one in wordleSolver.possibleWords. 
+                          
+        Raises:
+            IndexError: Raised if wordOverride is not in wordleSolver.possibleWords
+            RuntimeError: Raised if calculate() without wordOverride is called before 
+                          nextWord() since init or last calculate() 
+
+        Returns:
+            bool: Returns True if wordle is finished (feedback only contains g) else False.
         """
+        
+        # Check feedback
+        if not isinstance(feedback, str):
+            raise TypeError("feedback must be a str")
         if not re.fullmatch(fr"[-yg]{{{self.wordLength}}}", feedback):
             raise ValueError("Not a valid feedback")
-
+        
+        # Check wordOverride
+        if wordOverride is None:
+            if self._currentGuessIndex == -1: # nextWord not called since last calculate()
+                raise RuntimeError("You must call nextWord() before calculate() without wordOverride")
+            word = self._currentGuess
+        else:
+            if not isinstance(wordOverride, str):
+                raise TypeError("wordOverride must be a str")
+            if wordOverride not in self._possibleWords:
+                raise IndexError("wordOverride is not in wordleSolver.possibleWords")
+            word = wordOverride
+        
+        # If wordle got found, return True
         if feedback == "ggggg":
-            sys.exit(0)
+            return True
             
         
         # The logic to use for one or multible of one letter (*/_=placeholder/empty):
@@ -189,57 +252,74 @@ class WordleSolver:
         addToIncludedLetters = ""
         yellowLetters = "" # All yellow reported letter in this round
             
-        for i, fb, letter in sorted(zip(range(self.wordLength), feedback, self.currentGuess), key=lambda x: {"g": 0, "y": 1, "-": 2}[x[1]]):
+        for i, fb, letter in sorted(zip(range(self.wordLength), feedback, word), key=lambda x: {"g": 0, "y": 1, "-": 2}[x[1]]):
             match fb:
                 case "g":   # Letter correct
-                    self.greenFlag[i] = letter
+                    self._greenFlag[i] = letter
                     addToIncludedLetters += letter
                 case "y":   # Letter in word, but wrong position
                     addToIncludedLetters += letter
                     # If letter is not already in excluded letters
-                    if letter not in self.excludedLetters[i]:
-                        self.excludedLetters[i] += letter
+                    if letter not in self._excludedLetters[i]:
+                        self._excludedLetters[i] += letter
                     yellowLetters += letter
                 case "-":   # Letter less or not in word
                     if letter in yellowLetters:
-                        self.excludedLetters[i] += letter # Letter is not on this position
-                    elif letter in self.greenFlag: # Other occurents of letter is green
+                        self._excludedLetters[i] += letter # Letter is not on this position
+                    elif letter in self._greenFlag: # Other occurents of letter is green
                         for i_ex in range(self.wordLength):
-                            if letter != self.greenFlag[i_ex] and (letter not in self.excludedLetters[i_ex]):
-                                self.excludedLetters[i_ex] += letter
+                            if letter != self._greenFlag[i_ex] and (letter not in self._excludedLetters[i_ex]):
+                                self._excludedLetters[i_ex] += letter
                     else: # Letter is not in word
                         for i_ex in range(self.wordLength):
-                            if letter not in self.excludedLetters[i_ex]:
-                                self.excludedLetters[i_ex] += letter
+                            if letter not in self._excludedLetters[i_ex]:
+                                self._excludedLetters[i_ex] += letter
                 case _ as capture:
                     raise ValueError(f"This is a bug, please report! Captured the following: {capture !r}")        
         
         # Add to include letters to included letters
         addToIncludedLetters_woDup = "".join(set(addToIncludedLetters)) # Remove dupicates
-        if self.highlightsAllDuplicates:
+        if self._highlightsAllDuplicates:
             # If flag is set, drop duplicates
             addToIncludedLetters = addToIncludedLetters_woDup
         for l in addToIncludedLetters_woDup:
-            self.includedLetters = self.includedLetters.replace(l, "")
-            self.includedLetters += l * addToIncludedLetters.count(l)
+            self._includedLetters = self._includedLetters.replace(l, "")
+            self._includedLetters += l * addToIncludedLetters.count(l)
         
-        logging.info(f"greenFlag: {self.greenFlag}")
-        logging.info(f"includedLetters: {self.includedLetters}")
-        logging.info(f"excludedLetters: {self.excludedLetters}")
+        # Update round counter
+        self._roundCounter += 1
+        
+        # Reset index of current guess
+        self._currentGuessIndex = -1
+        
+        logging.info(f"greenFlag: {self._greenFlag}")
+        logging.info(f"includedLetters: {self._includedLetters}")
+        logging.info(f"excludedLetters: {self._excludedLetters}")
+        
+        # Updated possible words
+        self._updatePossibleWords()
+        
+        if len(self._possibleWords) == 0:
+            logging.critical("Word list of lenght 0. No word found! Probably a Bug")
+            raise WordNotFoundError("Word list of lenght 0. No word found! Probably a Bug")
+        
+        self._possibleWords = self._calculatePossibility(self._possibleWords)
+        
+        return False 
                 
 
-    def updatePossibleWords(self) -> None:
+    def _updatePossibleWords(self) -> None:
         """Update the list of possible words based on greenFlag, excludedLetter and includedLetter
         """
         # mask words containing must have letters
-        reg_patter_included = f"^.*{'.*'.join(sorted(self.includedLetters))}.*$"
+        reg_patter_included = f"^.*{'.*'.join(sorted(self._includedLetters))}.*$"
         logging.debug(f"reg_patter_included: {reg_patter_included}")
-        sortedWordList = self.possibleWords.apply(func=lambda s: "".join(sorted(s))) # TODO Calculate on creation, not here
+        sortedWordList = self._possibleWords.apply(func=lambda s: "".join(sorted(s))) # TODO Calculate on creation, not here
         b_required = sortedWordList.str.fullmatch(reg_patter_included)
         
         # mask words matching fixed letters and not including forbidden letters
         reg_patter = "^"
-        for flag, excl in zip(self.greenFlag, self.excludedLetters):
+        for flag, excl in zip(self._greenFlag, self._excludedLetters):
             if flag:    # If letter is known, use it
                 reg_patter += flag
             elif not excl:  # no forbidden letters, except everything
@@ -249,6 +329,19 @@ class WordleSolver:
         reg_patter += "$"
         logging.info(f"Regex pattern: {reg_patter !r}")
         
-        b_pos = self.possibleWords.str.fullmatch(reg_patter)
+        b_pos = self._possibleWords.str.fullmatch(reg_patter)
         
-        self.possibleWords = self.possibleWords[b_required & b_pos].reset_index(drop=True).squeeze() # TODO remove squeeze
+        self._possibleWords = self._possibleWords[b_required & b_pos].reset_index(drop=True).squeeze() # TODO remove squeeze
+
+
+    def _calculatePossibility(self, wordList: pd.Series) -> pd.Series:
+        """Capsules sort_by_percentages.
+        Calculates for each word the possibility it is the right one. Returns a sorted list from best to worst
+
+        Args:
+            wl_hit (pd.Series): List of words to sort
+
+        Returns:
+            pd.Series: Sorted list with percentages as index and words as values, sorted from best to worst
+        """
+        return sort_py_percentage(wordList)

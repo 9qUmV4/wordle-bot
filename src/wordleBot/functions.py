@@ -12,10 +12,6 @@ def sort_py_percentage(wl: pd.Series) -> pd.Series:
     """Takes a pd.Series list containing words and returns them sorted by percentage. 
     Returns a pd.Series with the percentage in the Index and word as value"""
     # Check if dataframe is empty
-    if len(wl) == 0:
-        logging.critical("Word list of lenght 0. No word found! Probably a Bug")
-        print("Word list of lenght 0. No word found! Probably a Bug")
-        sys.exit(1)
     
     if isinstance(wl, str):
         return pd.Series(data=[wl,], index=[1, ])
