@@ -60,6 +60,9 @@ class WordleSolver:
             self.wordLength
         ))
         
+        # Calculate a lookup table for letters sorted by alphabet
+        self._lookup_sorted_words = self._wordlist.apply(func=lambda s: "".join(sorted(s)))
+        
         # And reset
         self.reset()
         return None
@@ -317,8 +320,7 @@ class WordleSolver:
         # mask words containing must have letters
         reg_patter_included = f"^.*{'.*'.join(sorted(self._includedLetters))}.*$"
         logging.debug(f"reg_patter_included: {reg_patter_included}")
-        sortedWordList = self._possibleWords.apply(func=lambda s: "".join(sorted(s))) # TODO Calculate on creation, not here
-        b_required = sortedWordList.str.fullmatch(reg_patter_included)
+        b_required = self._lookup_sorted_words.loc[self._possibleWords.index].str.fullmatch(reg_patter_included)
         
         # mask words matching fixed letters and not including forbidden letters
         reg_patter = "^"
@@ -334,7 +336,7 @@ class WordleSolver:
         
         b_pos = self._possibleWords.str.fullmatch(reg_patter)
         
-        self._possibleWords = self._possibleWords[b_required & b_pos].reset_index(drop=True).squeeze() # TODO remove squeeze
+        self._possibleWords = self._possibleWords[b_required & b_pos]
 
 
     def _calculatePossibility(self, wordList: pd.Series) -> pd.Series:
