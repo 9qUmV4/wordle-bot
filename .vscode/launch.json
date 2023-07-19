@@ -20,20 +20,12 @@
             ]
         },
         {
-            "name": "Python: Run wordleBot.py",
+            "name": "Python: Run Wordle test implementation ",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/wordle-bot.py",
+            "program": "${workspaceFolder}/tests/wordle.py",
             "console": "integratedTerminal",
             "justMyCode": true,
-            "args": [
-                "--language",
-                "en",
-                "--lenght",
-                "5",
-                "--log-level",
-                "DEBUG"
-            ]
         }
     ]
 }

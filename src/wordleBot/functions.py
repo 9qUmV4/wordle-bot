@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 
-def sort_py_percentage(wl: pd.Series) -> pd.Series:
+def sort_by_percentage(wl: pd.Series) -> pd.Series:
     """Takes a pd.Series list containing words and returns them sorted by percentage. 
     Returns a pd.Series with the percentage in the Index and word as value"""
     # Check if dataframe is empty
@@ -18,7 +18,7 @@ def sort_py_percentage(wl: pd.Series) -> pd.Series:
     # Split up string into single chars
     dt = wl.str.split("", expand=True)
     dt: pd.DataFrame = dt.drop(columns=[0, 6]) # Drop start and end of string (Whitespace chars)
-    dt.columns = range(dt.columns.size)
+    dt.columns = range(dt.columns.size)     # TODO reset_index(drop=True)?
 
     # Set up dataframe to count appearances of characters based on their position 
     dt_c = pd.DataFrame(data=np.nan, index=list(string.ascii_lowercase), columns=range(5))
@@ -45,7 +45,7 @@ def sort_py_percentage(wl: pd.Series) -> pd.Series:
     # Sort based on percentage
     wl_per_sort = wl_per.sort_values('total', axis='index', ascending=False)
 
-    wl_per_sort = wl_per_sort.loc[:, ['total', 'word']]
+    wl_per_sort = wl_per_sort.loc[:, ['total', 'word']]     # Create a new Series with total:word and sort that
     wl_per_sort = wl_per_sort.set_index('total').squeeze()
 
     return wl_per_sort

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from .functions import sort_py_percentage, read as read_wordlist
+from .functions import sort_by_percentage, read as read_wordlist
 
 __all__ = [
     "WordNotFoundError",
@@ -50,6 +50,9 @@ class WordleSolver:
         if not isinstance(highlightsAllDuplicates, bool):
             raise TypeError("Param highlightsAllDuplicates must be a bool")
         self._highlightsAllDuplicates = highlightsAllDuplicates
+        
+        # Compile Regex Pattern to speed up solving
+        self._regex_feedback_check = re.compile(fr"[-yg]{{{self.wordLength}}}")
 
         # Read in wordlist
         self._wordlist: pd.Series = self._calculatePossibility(read_wordlist(
@@ -213,7 +216,7 @@ class WordleSolver:
         # Check feedback
         if not isinstance(feedback, str):
             raise TypeError("feedback must be a str")
-        if not re.fullmatch(fr"[-yg]{{{self.wordLength}}}", feedback):
+        if not re.fullmatch(self._regex_feedback_check, feedback):
             raise ValueError("Not a valid feedback")
         
         # Check wordOverride
@@ -344,4 +347,4 @@ class WordleSolver:
         Returns:
             pd.Series: Sorted list with percentages as index and words as values, sorted from best to worst
         """
-        return sort_py_percentage(wordList)
+        return sort_by_percentage(wordList)
