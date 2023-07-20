@@ -13,6 +13,12 @@ Help page:
 ```
 python3 -m wordleBot --help
 ```
+
+## Development cheat sheet
+And to edit source code and test it:
+```
+pip install -e . 
+```
   
 The english word list we used is [this](https://www-personal.umich.edu/~jlawler/wordlist.html) and the german wordlist [this](https://gist.github.com/MarvinJWendt/2f4f4154b8ae218600eb091a5706b5f4)
 
