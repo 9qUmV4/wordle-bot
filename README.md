@@ -14,6 +14,12 @@ Help page:
 python3 -m wordleBot --help
 ```
 
+## Game Links
+Links to some wordle games: 
+[Wordle - The New York Times](https://www.nytimes.com/games/wordle/index.html)
+[Wordle Game - Play Unlimited](https://wordlegame.org/)
+[Wordle Archive - Play Older and Next Games](https://wordle-play.com/wordle-archive)
+
 ## Development cheat sheet
 And to edit source code and test it:
 ```
